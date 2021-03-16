@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using UltraMapper.Internals;
 using UltraMapper.MappingExpressionBuilders;
@@ -19,11 +20,18 @@ namespace UltraMapper.Parsing.Extensions
         {
             var paramValueExp = Expression.Property( context.SourceInstance,
                 nameof( SimpleParam.Value ) );
-            
-            var conversion = MapperConfiguration[ typeof( string ), 
+
+            var conversion = MapperConfiguration[ typeof( string ),
                 context.TargetInstance.Type ].MappingExpression;
 
-            return Expression.Invoke( conversion, paramValueExp );
+            //first param can be the ReferenceTracker
+            var replaceParam = conversion.Parameters
+                .First( p => p.Type == paramValueExp.Type );
+
+            return conversion.Body.ReplaceParameter( 
+                paramValueExp, replaceParam.Name );
+
+            //return Expression.Invoke( conversion, paramValueExp );
         }
     }
 }

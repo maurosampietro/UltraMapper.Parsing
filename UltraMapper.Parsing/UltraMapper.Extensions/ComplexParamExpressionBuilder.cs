@@ -42,7 +42,7 @@ namespace UltraMapper.Parsing.Extensions
             var paramNameExp = Expression.Property( subParam, nameof( IParsedParam.Name ) );
             var paramNameToLower = Expression.Call( paramNameExp, nameof( String.ToLower ), null, null );
 
-            var propertiesAssigns = new ComplexParamMemberExpressionBuilder( _mapper.MappingConfiguration ) { CanMapByIndex = CanMapByIndex }
+            var propertiesAssigns = new ComplexParamMemberExpressionBuilder( _mapper.Config ) { CanMapByIndex = CanMapByIndex }
                 .GetMemberAssignments( context, targetMembers, subParam, MapperConfiguration, paramNameLowerCase ).ToArray();
 
             Expression paramNameDispatch = null;

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net45;net46;net47</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net45;net46;net47;net5.0</TargetFrameworks>
     <Description>Common classes and interfaces for parsers based on UltraMapper</Description>
     <PackageProjectUrl>https://github.com/maurosampietro/UltraMapper.Parsing</PackageProjectUrl>
     <RepositoryUrl>https://github.com/maurosampietro/UltraMapper.Parsing</RepositoryUrl>
@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\UltraMapper\UltraMapper\UltraMapper.csproj" />
+    <PackageReference Include="UltraMapper" Version="0.2.59" />
   </ItemGroup>
 
 </Project>

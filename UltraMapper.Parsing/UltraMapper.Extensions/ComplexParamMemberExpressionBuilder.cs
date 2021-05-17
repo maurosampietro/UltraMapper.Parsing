@@ -84,7 +84,7 @@ namespace UltraMapper.Parsing.Extensions
                 var conversion = MapperConfiguration[ typeof( SimpleParam ),
                     propertyInfo.PropertyType ].MappingExpression;
 
-                var setter = memberInfo.GetSetterLambdaExpression();
+                var setter = memberInfo.GetSetterExp();
 
                 return base.GetSimpleMemberExpressionInternal( conversion,
                     context.TargetInstance, Expression.Convert( subParam, typeof( SimpleParam ) ), setter );
@@ -109,8 +109,7 @@ namespace UltraMapper.Parsing.Extensions
                 var mappingSource = new MappingSource( sourcemappingtype );
                 var mappingTarget = new MappingTarget( targetsetprop );
 
-                var typePair = new TypePair( propertyInfo.PropertyType, targetsetprop.PropertyType );
-                var typeMapping = new TypeMapping( MapperConfiguration, typePair );
+                var typeMapping = new TypeMapping( MapperConfiguration, propertyInfo.PropertyType, targetsetprop.PropertyType );
                 var membermapping = new MemberMapping( typeMapping, mappingSource, mappingTarget );
                 var membermappingcontext = new MemberMappingContext( membermapping );
 

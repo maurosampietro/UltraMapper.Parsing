@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using UltraMapper.Internals;
+﻿using System.Collections.Generic;
 
 namespace UltraMapper.Parsing
 {
@@ -8,7 +6,6 @@ namespace UltraMapper.Parsing
     {
         public string Name { get; set; }
         public int Index { get; set; }
-
         public IList<IParsedParam> SubParams { get; set; }
 
         public IParsedParam this[ int index ]

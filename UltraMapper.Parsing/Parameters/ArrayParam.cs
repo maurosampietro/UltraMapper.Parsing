@@ -8,24 +8,20 @@ namespace UltraMapper.Parsing
         public string Name { get; set; }
         public int Index { get; set; }
 
-        public ArrayParam() { }
+        public ArrayParam() :
+            this( new List<IParsedParam>( 16 ) )
+        { }
 
         public ArrayParam( IEnumerable<IParsedParam> items )
         {
             _items = items.ToList();
         }
 
-        private readonly List<IParsedParam> _items = new List<IParsedParam>();
+        private readonly List<IParsedParam> _items;
         public IReadOnlyList<IParsedParam> Items => _items;
 
-        public IParsedParam this[ int index ]
-        {
-            get => this.Items[ index ];
-        }
-
-        public void Add( IParsedParam item )
-        {
-            _items.Add( item );
-        }
+        public IParsedParam this[ int index ] => this.Items[ index ];
+        public void Add( IParsedParam item ) => _items.Add( item );
+        public void Clear() => _items.Clear();
     }
 }

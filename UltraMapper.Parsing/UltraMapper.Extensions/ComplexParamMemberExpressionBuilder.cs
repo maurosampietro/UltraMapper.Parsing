@@ -75,19 +75,20 @@ namespace UltraMapper.Parsing.Extensions
         }
 
         private Expression GetMemberAssignment( ReferenceMapperContext context, ParameterExpression subParam,
-            MemberInfo memberInfo, Configuration MapperConfiguration )
+            MemberInfo targetMemberInfo, Configuration MapperConfiguration )
         {
-            var propertyInfo = (PropertyInfo)memberInfo;
+            var propertyInfo = (PropertyInfo)targetMemberInfo;
 
             if( propertyInfo.PropertyType.IsBuiltIn( true ) )
             {
-                var conversion = MapperConfiguration[ typeof( SimpleParam ),
-                    propertyInfo.PropertyType ].MappingExpression;
+                var typeMap = new TypeMapping( MapperConfiguration, typeof( SimpleParam ), targetMemberInfo.GetType() );
 
-                var setter = memberInfo.GetSetterExp();
+                var mappingSource = new MappingSource<IParsedParam, string>( s => ((SimpleParam)s).Value );
+                var memberMapping = new MemberMapping( typeMap, mappingSource, new MappingTarget( targetMemberInfo ) );
 
-                return base.GetSimpleMemberExpressionInternal( conversion,
-                    context.TargetInstance, Expression.Convert( subParam, typeof( SimpleParam ) ), setter );
+                return base.GetSimpleMemberExpression( memberMapping )
+                    .ReplaceParameter( context.TargetInstance, "instance" )
+                    .ReplaceParameter( subParam, "sourceInstance" );
             }
             else
             {
@@ -105,7 +106,7 @@ namespace UltraMapper.Parsing.Extensions
                     sourceValueExp = Expression.Property( Expression.Convert( subParam, typeof( ArrayParam ) ), nameof( ArrayParam.Items ) );
                 }
 
-                var targetsetprop = context.TargetInstance.Type.GetProperty( memberInfo.Name );
+                var targetsetprop = context.TargetInstance.Type.GetProperty( targetMemberInfo.Name );
                 var mappingSource = new MappingSource( sourcemappingtype );
                 var mappingTarget = new MappingTarget( targetsetprop );
 
@@ -113,7 +114,7 @@ namespace UltraMapper.Parsing.Extensions
                 var membermapping = new MemberMapping( typeMapping, mappingSource, mappingTarget );
                 var membermappingcontext = new MemberMappingContext( membermapping );
 
-                var targetProperty = Expression.Property( context.TargetInstance, memberInfo.Name );
+                var targetProperty = Expression.Property( context.TargetInstance, targetMemberInfo.Name );
 
                 var guessedSourceType = typeof( ComplexParam );
                 if( targetProperty.Type.IsBuiltIn( true ) )

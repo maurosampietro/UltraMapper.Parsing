@@ -59,7 +59,9 @@ namespace UltraMapper.Parsing.Extensions
 
             var expression = !propertiesAssigns.Any() ? (Expression)Expression.Empty() : Expression.Block
             (
-                new[] { subParam, paramNameLowerCase },
+                new[] { context.Mapper, context.ReferenceTracker, subParam, paramNameLowerCase },
+
+                Expression.Assign( context.Mapper, Expression.Constant( _mapper ) ),
 
                 ExpressionLoops.ForEach( subParamsAccess, subParam, Expression.Block
                 (

@@ -92,94 +92,30 @@ namespace UltraMapper.Parsing.Extensions
             }
             else
             {
-                PropertyInfo sourcemappingtype = null;
-                Expression sourceValueExp = null;
+                TypeMapping typeMap = null;
+                IMappingSource mappingSource = null;
+
                 if( context.SourceInstance.Type == typeof( ComplexParam ) )
                 {
-                    sourcemappingtype = typeof( ComplexParam ).GetProperty( nameof( ComplexParam.SubParams ) );
-                    sourceValueExp = Expression.Property( Expression.Convert( subParam, typeof( ComplexParam ) ), nameof( ComplexParam.SubParams ) );
+                    typeMap = new TypeMapping( MapperConfiguration, typeof( ComplexParam ), targetMemberInfo.GetType() );
+                    mappingSource = new MappingSource<IParsedParam, IList<IParsedParam>>( s => ((ComplexParam)s).SubParams );
                 }
 
                 if( propertyInfo.PropertyType.IsEnumerable() )
                 {
-                    sourcemappingtype = typeof( ArrayParam ).GetProperty( nameof( ArrayParam.Items ) );
-                    sourceValueExp = Expression.Property( Expression.Convert( subParam, typeof( ArrayParam ) ), nameof( ArrayParam.Items ) );
+                    typeMap = new TypeMapping( MapperConfiguration, typeof( ArrayParam ), targetMemberInfo.GetType() );
+                    mappingSource = new MappingSource<IParsedParam, IReadOnlyList<IParsedParam>>( s => ((ArrayParam)s).Items );
                 }
 
-                var targetsetprop = context.TargetInstance.Type.GetProperty( targetMemberInfo.Name );
-                var mappingSource = new MappingSource( sourcemappingtype );
-                var mappingTarget = new MappingTarget( targetsetprop );
+                var memberMapping = new MemberMapping( typeMap, mappingSource, new MappingTarget( targetMemberInfo ) );
 
-                var typeMapping = new TypeMapping( MapperConfiguration, propertyInfo.PropertyType, targetsetprop.PropertyType );
-                var membermapping = new MemberMapping( typeMapping, mappingSource, mappingTarget );
-                var membermappingcontext = new MemberMappingContext( membermapping );
+                var exp = base.GetComplexMemberExpression( memberMapping )
+                    .ReplaceParameter( context.TargetInstance, "instance" )
+                    .ReplaceParameter( subParam, "sourceInstance" )
+                    .ReplaceParameter( context.Mapper, "mapper" )
+                    .ReplaceParameter( context.ReferenceTracker, "referenceTracker" );
 
-                var targetProperty = Expression.Property( context.TargetInstance, targetMemberInfo.Name );
-
-                var guessedSourceType = typeof( ComplexParam );
-                if( targetProperty.Type.IsBuiltIn( true ) )
-                    guessedSourceType = typeof( SimpleParam );
-                else if( targetProperty.Type.IsEnumerable() )
-                    guessedSourceType = typeof( ArrayParam );
-
-                var targetType = targetProperty.Type;
-                if( targetProperty.Type.IsInterface || targetProperty.Type.IsAbstract )
-                    targetType = typeof( List<> ).MakeGenericType( targetType.GetGenericArguments() );
-
-                var mapping = MapperConfiguration[ targetType, targetsetprop.PropertyType ];
-
-                var memberAssignment = ((ReferenceMapper)mapping.Mapper).GetMemberAssignment( membermappingcontext )
-                    .ReplaceParameter( membermappingcontext.SourceMember, "sourceValue" )
-                    .ReplaceParameter( targetProperty, "targetValue" )
-                    .ReplaceParameter( context.TargetInstance, "instance" );
-
-                var mapping2 = MapperConfiguration[ guessedSourceType, targetProperty.Type ];
-                if( MapperConfiguration.IsReferenceTrackingEnabled )
-                {
-                    return ReferenceTrackingExpression.GetMappingExpression(
-                        context.ReferenceTracker,
-                        subParam, targetProperty,
-                        memberAssignment, context.Mapper, _mapper,
-                         Expression.Constant( mapping2, typeof( IMapping ) ) );
-                }
-                else
-                {
-                    var mapMethod = ReferenceMapperContext.RecursiveMapMethodInfo
-                        .MakeGenericMethod( subParam.Type, targetProperty.Type );
-
-                    return Expression.Block
-                    (
-                        new[] { membermappingcontext.SourceMember, context.Mapper },
-
-                        Expression.Assign( context.Mapper, Expression.Constant( _mapper ) ),
-                        Expression.Assign( membermappingcontext.SourceMember, sourceValueExp ),
-
-                        memberAssignment,
-
-                        //Expression.Invoke(mapping2.MappingExpression, context.ReferenceTracker,
-                        //    Expression.Convert(subParam,guessedSourceType),targetProperty)
-
-                        //slower but more reliable resolving abstract types/interfaces etc..
-                        Expression.Call( context.Mapper, mapMethod, subParam,
-                            targetProperty, context.ReferenceTracker,
-                            Expression.Constant( mapping2, typeof( IMapping ) ) )
-                    );
-                }
-
-                ////better integrated with ultramapper:
-                //var main2 = Expression.Block
-                //(
-                //    new[] { context.Mapper },
-                //    Expression.Assign( context.Mapper, Expression.Constant( _mapper ) ),
-                //    base.GetComplexMemberExpression( membermapping )
-                //        .ReplaceParameter( context.SourceInstance, "instance" )
-                //        .ReplaceParameter( context.ReferenceTracker, "referenceTracker" )
-                //        .ReplaceParameter( context.Mapper, "mapper" )
-                //        .ReplaceParameter( context.TargetInstance, "instance" )
-                //        .ReplaceParameter( sourceToReplace, "sourceValue" )//!!!!! il problema è la fonte da cui leggere il parametro
-                //);
-
-                //return main2;
+                return Expression.Block( typeof( void ), exp );              
             }
         }
     }

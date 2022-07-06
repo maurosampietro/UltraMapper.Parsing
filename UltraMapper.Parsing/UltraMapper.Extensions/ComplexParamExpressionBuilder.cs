@@ -17,8 +17,8 @@ namespace UltraMapper.Parsing.Extensions
 
         public override bool CanHandle( Type source, Type target )
         {
-            return source == typeof( ComplexParam ) &&
-                target != typeof( ComplexParam ); //allow cloning
+            return source == typeof( ComplexParam ) && 
+                target != typeof( ComplexParam ); //disallow cloning
         }
 
         public override LambdaExpression GetMappingExpression( Type source, Type target, IMappingOptions options )
@@ -59,7 +59,7 @@ namespace UltraMapper.Parsing.Extensions
 
             var expression = !propertiesAssigns.Any() ? (Expression)Expression.Empty() : Expression.Block
             (
-                new[] { context.Mapper, context.ReferenceTracker, subParam, paramNameLowerCase },
+                new[] { context.Mapper, subParam, paramNameLowerCase },
 
                 Expression.Assign( context.Mapper, Expression.Constant( _mapper ) ),
 
@@ -81,19 +81,19 @@ namespace UltraMapper.Parsing.Extensions
         protected MemberInfo[] SelectTargetMembers( Type targetType )
         {
             return targetType.GetProperties() //methods only supported at top level (in ParsedCommand)
-                       .Where( m => m.GetSetMethod() != null ) //must be assignable
-                       .Where( m => m.GetIndexParameters().Length == 0 )//indexer not supported
-                       .Select( ( m, index ) => new
-                       {
-                           Member = m,
-                           Options = m.GetCustomAttribute<OptionAttribute>() ??
-                               new OptionAttribute() {/*Order = index*/ }
-                       } )
-                       .Where( m => !m.Options.IsIgnored )
-                       .OrderByDescending( info => info.Options.IsRequired )
-                       .ThenBy( info => info.Options.Order )
-                       .Select( m => m.Member )
-                       .ToArray();
+                .Where( m => m.GetSetMethod() != null ) //must be assignable
+                .Where( m => m.GetIndexParameters().Length == 0 )//indexer not supported
+                .Select( ( m, index ) => new
+                {
+                    Member = m,
+                    Options = m.GetCustomAttribute<OptionAttribute>() ??
+                        new OptionAttribute() {/*Order = index*/ }
+                } )
+                .Where( m => !m.Options.IsIgnored )
+                .OrderByDescending( info => info.Options.IsRequired )
+                .ThenBy( info => info.Options.Order )
+                .Select( m => m.Member )
+                .ToArray();
         }
 
         private Expression GetSwitch( Expression[] propertiesAssigns, ParameterExpression paramNameLowerCase )
@@ -101,7 +101,15 @@ namespace UltraMapper.Parsing.Extensions
             IEnumerable<SwitchCase> getSwitchCases()
             {
                 foreach( ConditionalExpression item in propertiesAssigns )
-                    yield return Expression.SwitchCase( item.IfTrue, ((BinaryExpression)item.Test).Left );
+                {
+                    var caseTest = ((BinaryExpression)item.Test).Left;
+
+                    var caseBody = item.IfTrue;
+                    if( caseBody.Type != typeof( void ) )
+                        caseBody = Expression.Block( typeof( void ), caseBody );
+
+                    yield return Expression.SwitchCase( caseBody, caseTest );
+                }
             }
 
             var switches = getSwitchCases().ToArray();

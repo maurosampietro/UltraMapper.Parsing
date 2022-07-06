@@ -92,30 +92,109 @@ namespace UltraMapper.Parsing.Extensions
             }
             else
             {
+                //{
+                //    PropertyInfo sourcemappingtype = null;
+                //    Expression sourceValueExp = null;
+                //    if( context.SourceInstance.Type == typeof( ComplexParam ) )
+                //    {
+                //        sourcemappingtype = typeof( ComplexParam ).GetProperty( nameof( ComplexParam.SubParams ) );
+                //        sourceValueExp = Expression.Property( Expression.Convert( subParam, typeof( ComplexParam ) ), nameof( ComplexParam.SubParams ) );
+                //    }
+
+                //    if( propertyInfo.PropertyType.IsEnumerable() )
+                //    {
+                //        sourcemappingtype = typeof( ArrayParam ).GetProperty( nameof( ArrayParam.Items ) );
+                //        sourceValueExp = Expression.Property( Expression.Convert( subParam, typeof( ArrayParam ) ), nameof( ArrayParam.Items ) );
+                //    }
+
+                //    var mappingSource2 = new MappingSource( sourcemappingtype );
+                //    var mappingTarget2 = new MappingTarget( targetMemberInfo );
+
+                //    var targetProperty = Expression.Property( context.TargetInstance, targetMemberInfo.Name );
+
+                //    var guessedSourceType = typeof( ComplexParam );
+                //    if( targetProperty.Type.IsBuiltIn( true ) )
+                //        guessedSourceType = typeof( SimpleParam );
+                //    else if( targetProperty.Type.IsEnumerable() )
+                //        guessedSourceType = typeof( ArrayParam );
+
+                //    var targetType = targetProperty.Type;
+                //    if( targetProperty.Type.IsInterface || targetProperty.Type.IsAbstract )
+                //        targetType = typeof( List<> ).MakeGenericType( targetType.GetGenericArguments() );
+
+
+                //    var typeMapping = new TypeMapping( MapperConfiguration, guessedSourceType, propertyInfo.PropertyType );
+                //    var membermapping = new MemberMapping( typeMapping, mappingSource2, mappingTarget2 );
+                //    var membermappingcontext = new MemberMappingContext( membermapping );
+
+                //    var mapping2 = MapperConfiguration[ guessedSourceType, targetProperty.Type ];
+
+                //    var memberAssignment = ((ReferenceMapper)mapping2.Mapper)
+                //        .GetMemberAssignment( membermappingcontext, out bool needtrackingorrecursion )
+                //        .ReplaceParameter( membermappingcontext.SourceMember, "sourceValue" )
+                //        .ReplaceParameter( targetProperty, "targetValue" )
+                //        .ReplaceParameter( context.TargetInstance, "instance" );
+
+
+                //    if( MapperConfiguration.IsReferenceTrackingEnabled )
+                //    {
+                //        var tempReturn = ReferenceTrackingExpression.GetMappingExpression(
+                //            context.ReferenceTracker,
+                //            subParam, targetProperty,
+                //            memberAssignment, context.Mapper, _mapper,
+                //             Expression.Constant( mapping2, typeof( IMapping ) ) );
+
+                //        return tempReturn;
+                //    }
+                //    else
+                //    {
+                //        var mapMethod = ReferenceMapperContext.RecursiveMapMethodInfo
+                //            .MakeGenericMethod( subParam.Type, targetProperty.Type );
+
+                //        var tempReturn = Expression.Block
+                //        (
+                //            new[] { membermappingcontext.SourceMember},
+
+                //            Expression.Assign( membermappingcontext.SourceMember, sourceValueExp ),
+
+                //            memberAssignment,
+
+                //            //Expression.Invoke(mapping2.MappingExpression, context.ReferenceTracker,
+                //            //    Expression.Convert(subParam,guessedSourceType),targetProperty)
+
+                //            //slower but more reliable resolving abstract types/interfaces etc..
+                //            Expression.Call( context.Mapper, mapMethod, subParam,
+                //                targetProperty, context.ReferenceTracker,
+                //                Expression.Constant( mapping2, typeof( IMapping ) ) )
+                //        );
+
+                //        return tempReturn;
+                //    }
+                //}
+
                 TypeMapping typeMap = null;
                 IMappingSource mappingSource = null;
 
                 if( context.SourceInstance.Type == typeof( ComplexParam ) )
                 {
-                    typeMap = new TypeMapping( MapperConfiguration, typeof( ComplexParam ), targetMemberInfo.GetType() );
-                    mappingSource = new MappingSource<IParsedParam, IList<IParsedParam>>( s => ((ComplexParam)s).SubParams );
+                    typeMap = new TypeMapping( MapperConfiguration, typeof( ComplexParam ), targetMemberInfo.GetMemberType() );
+                    mappingSource = new MappingSource<IParsedParam, ComplexParam>( s => (ComplexParam)s );
                 }
 
                 if( propertyInfo.PropertyType.IsEnumerable() )
                 {
-                    typeMap = new TypeMapping( MapperConfiguration, typeof( ArrayParam ), targetMemberInfo.GetType() );
+                    typeMap = new TypeMapping( MapperConfiguration, typeof( ArrayParam ), targetMemberInfo.GetMemberType() );
                     mappingSource = new MappingSource<IParsedParam, IReadOnlyList<IParsedParam>>( s => ((ArrayParam)s).Items );
                 }
 
-                var memberMapping = new MemberMapping( typeMap, mappingSource, new MappingTarget( targetMemberInfo ) );
+                var mappingTarget = new MappingTarget( targetMemberInfo );
+                var memberMapping = new MemberMapping( typeMap, mappingSource, mappingTarget );
 
-                var exp = base.GetComplexMemberExpression( memberMapping )
+                return base.GetComplexMemberExpression( memberMapping )
                     .ReplaceParameter( context.TargetInstance, "instance" )
                     .ReplaceParameter( subParam, "sourceInstance" )
                     .ReplaceParameter( context.Mapper, "mapper" )
                     .ReplaceParameter( context.ReferenceTracker, "referenceTracker" );
-
-                return Expression.Block( typeof( void ), exp );              
             }
         }
     }

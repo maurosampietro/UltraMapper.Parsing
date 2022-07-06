@@ -13,7 +13,8 @@ namespace UltraMapper.Parsing.Extensions
 
         public override bool CanHandle( Type source, Type target )
         {
-            return source == typeof( SimpleParam ) && target.IsBuiltIn( true );
+            return source == typeof( SimpleParam ) &&
+                target.IsBuiltIn( true );
         }
 
         protected override Expression GetValueExpression( MapperContext context )
@@ -28,7 +29,7 @@ namespace UltraMapper.Parsing.Extensions
             var replaceParam = conversion.Parameters
                 .First( p => p.Type == paramValueExp.Type );
 
-            return conversion.Body.ReplaceParameter( 
+            return conversion.Body.ReplaceParameter(
                 paramValueExp, replaceParam.Name );
 
             //return Expression.Invoke( conversion, paramValueExp );

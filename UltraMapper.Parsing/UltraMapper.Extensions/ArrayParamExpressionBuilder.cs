@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using UltraMapper.Internals;
 using UltraMapper.MappingExpressionBuilders;
 
 namespace UltraMapper.Parsing.Extensions
@@ -12,14 +13,21 @@ namespace UltraMapper.Parsing.Extensions
 
         public override bool CanHandle( Type source, Type target )
         {
-            return source == typeof( ArrayParam ) &&
+            //var test2 = source.IsEnumerable() &&
+            //        source.GetGenericArguments()[0] == typeof( IParsedParam )
+            //        && !target.IsEnumerable();
+
+            return source == typeof( ArrayParam ) && 
                 target != typeof( ArrayParam );
         }
 
         public override LambdaExpression GetMappingExpression( Type source, Type target, IMappingOptions options )
         {
             var context = (CollectionMapperContext)this.GetMapperContext( source, target, options );
-            var items = Expression.Property( context.SourceInstance, nameof( ArrayParam.Items ) );
+
+            Expression items = context.SourceInstance;
+            if( source == typeof( ArrayParam ) )
+                items = Expression.Property( context.SourceInstance, nameof( ArrayParam.Items ) );
 
             Type targetType = target;
             if( target.IsInterface || target.IsAbstract )

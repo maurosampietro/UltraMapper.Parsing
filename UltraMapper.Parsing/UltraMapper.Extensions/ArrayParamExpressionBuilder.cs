@@ -13,10 +13,6 @@ namespace UltraMapper.Parsing.Extensions
 
         public override bool CanHandle( Type source, Type target )
         {
-            //var test2 = source.IsEnumerable() &&
-            //        source.GetGenericArguments()[0] == typeof( IParsedParam )
-            //        && !target.IsEnumerable();
-
             return source == typeof( ArrayParam ) && 
                 target != typeof( ArrayParam );
         }
@@ -48,6 +44,15 @@ namespace UltraMapper.Parsing.Extensions
                 body = Expression.Invoke( mappingExpression, context.ReferenceTracker, items,
                        Expression.Convert( context.TargetInstance, targetType ) );
             }
+
+            body = Expression.IfThenElse
+            (
+                Expression.TypeIs( context.SourceInstance, typeof( SimpleParam ) ),
+
+                Expression.Assign( context.TargetInstance, Expression.Constant( null, target ) ),
+
+                body
+            );
 
             var delegateType = typeof( Action<,,> ).MakeGenericType(
                  context.ReferenceTracker.Type, context.SourceInstance.Type,

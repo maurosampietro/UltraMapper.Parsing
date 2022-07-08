@@ -69,6 +69,7 @@ namespace UltraMapper.Parsing.Extensions
                     paramNameDispatch
                 ) )
             )
+            .ReplaceParameter( context.Mapper, "mapper" )
             .ReplaceParameter( context.SourceInstance, "sourceInstance" )
             .ReplaceParameter( context.TargetInstance, "targetInstance" );
 
@@ -84,14 +85,38 @@ namespace UltraMapper.Parsing.Extensions
             MemberInfo[] targetMembers, ParameterExpression subParam,
             ParameterExpression paramNameLowerCase )
         {
+            var typeMapping = MapperConfiguration[ typeof( IParsedParam ), context.TargetInstance.Type ];
+
             for( int i = 0; i < targetMembers.Length; i++ )
             {
-                var memberInfo = targetMembers[ i ];
-                var assignment = GetMemberAssignment( context, subParam, memberInfo, MapperConfiguration );
+                var targetMemberInfo = targetMembers[ i ];
+                var targetMemberType = targetMemberInfo.GetMemberType();
 
-                var optionAttribute = memberInfo.GetCustomAttribute<OptionAttribute>();
+                var mappingSource = GetMappingSource( targetMemberType );
+                var mappingTarget = new MappingTarget( targetMemberInfo );
+                var memberMapping = typeMapping.AddMemberToMemberMapping( mappingSource, mappingTarget );
+
+                var targetProp = (PropertyInfo)memberMapping.TargetMember.MemberAccessPath.Last();
+
+                var optionAttribute = targetMemberInfo.GetCustomAttribute<OptionAttribute>();
                 string memberNameLowerCase = String.IsNullOrWhiteSpace( optionAttribute?.Name ) ?
-                    memberInfo.Name.ToLower() : optionAttribute.Name.ToLower();
+                    targetProp.Name.ToLower() : optionAttribute.Name.ToLower();
+
+                var memberExp = typeMapping.MemberToMemberMappingExpressions[ i ]
+                    .ReplaceParameter( context.TargetInstance, "instance" )
+                    .ReplaceParameter( subParam, "sourceInstance" )
+                    .ReplaceParameter( context.Mapper, "mapper" )
+                    .ReplaceParameter( context.ReferenceTracker, "referenceTracker" );
+
+                Expression exp = memberMapping.TargetType.IsBuiltIn( true ) ? memberExp : Expression.IfThenElse
+                (
+                    Expression.TypeIs( subParam, typeof( SimpleParam ) ),
+
+                    Expression.Assign( Expression.Property( context.TargetInstance, targetProp ),
+                        Expression.Constant( null, targetProp.PropertyType ) ),
+
+                    memberExp
+                );
 
                 if( this.CanMapByIndex )
                 {
@@ -110,7 +135,7 @@ namespace UltraMapper.Parsing.Extensions
                             )
                         ),
 
-                        assignment
+                        exp
                     );
                 }
                 else //can map only by name
@@ -119,103 +144,21 @@ namespace UltraMapper.Parsing.Extensions
                     (
                         //we check param name and index
                         Expression.Equal( Expression.Constant( memberNameLowerCase ), paramNameLowerCase ),
-                        assignment
+                        exp
                     );
                 }
-
-                //if( memberInfo is PropertyInfo pi && pi.PropertyType == typeof( bool ) && implicitbool )
-                //{
-                //    var subParamsAccess = Expression.Property( context.SourceInstance, nameof( ParsedCommand.Param ) );
-                //    var setter = memberInfo.GetSetterLambdaExpression();
-
-                //    yield return Expression.IfThenElse
-                //    (
-                //        Expression.Equal( subParamsAccess, Expression.Constant( null, typeof( IParsedParam ) ) ),
-                //        Expression.Invoke( setter, context.TargetInstance, Expression.Constant( true ) ),
-                //        standardChecks
-                //    );
-                //}                    
             }
         }
 
-        private Expression GetMemberAssignment( ReferenceMapperContext context, ParameterExpression subParam,
-            MemberInfo targetMemberInfo, Configuration MapperConfiguration )
+        private static readonly IMappingSource _spSource = new MappingSource<IParsedParam, string>( s => ((SimpleParam)s).Value );
+        private static readonly IMappingSource _cpSource = new MappingSource<IParsedParam, ComplexParam>( s => (ComplexParam)s );
+        private static readonly IMappingSource _apSource = new MappingSource<IParsedParam, IReadOnlyList<IParsedParam>>( s => ((ArrayParam)s).Items );
+
+        private static IMappingSource GetMappingSource( Type targetMemberType )
         {
-            var propertyInfo = (PropertyInfo)targetMemberInfo;
-
-            if( propertyInfo.PropertyType.IsBuiltIn( true ) )
-            {
-                var mappingSource = new MappingSource<IParsedParam, string>( s => ((SimpleParam)s).Value );
-                var mappingTarget = new MappingTarget( targetMemberInfo );
-
-                var typeMapping = MapperConfiguration[ typeof( IParsedParam ), context.TargetInstance.Type ];
-                typeMapping.AddMemberToMemberMapping( mappingSource, mappingTarget );
-
-                var memberMapping = typeMapping.MemberToMemberMappings[ mappingTarget ];
-
-                //var temp = typeMapping.MappingExpression.Body
-                //    .ReplaceParameter( context.TargetInstance, "instance" )
-                //    .ReplaceParameter( subParam, "sourceInstance" );
-
-                var exp2 = base.GetSimpleMemberExpression( memberMapping )
-                    .ReplaceParameter( context.TargetInstance, "instance" )
-                    .ReplaceParameter( subParam, "sourceInstance" );
-
-                return exp2;
-            }
-            else
-            {
-                var typeMapping = MapperConfiguration[ typeof( IParsedParam ), context.TargetInstance.Type ];
-
-
-                IMappingSource mappingSource = null;
-
-                if( context.SourceInstance.Type == typeof( ComplexParam ) )
-                {
-                    mappingSource = new MappingSource<IParsedParam, ComplexParam>( s => (ComplexParam)s );
-                }
-
-                if( propertyInfo.PropertyType.IsEnumerable() )
-                {
-                    mappingSource = new MappingSource<IParsedParam, IReadOnlyList<IParsedParam>>( s => ((ArrayParam)s).Items );
-
-                    //var temp = MapperConfiguration[ typeof( ArrayParam ), targetMemberInfo.GetMemberType() ];
-                    //var exp2 =
-                    //    temp.MappingExpression;
-
-                    //exp2.ReplaceParameter( context.TargetInstance, "instance" )
-                    //        .ReplaceParameter( subParam, "sourceInstance" )
-                    //        .ReplaceParameter( context.Mapper, "mapper" )
-                    //        .ReplaceParameter( context.ReferenceTracker, "referenceTracker" );
-
-                    //return exp2;
-                }
-
-                var mappingTarget = new MappingTarget( targetMemberInfo );
-                var memberMapping = typeMapping.AddMemberToMemberMapping( mappingSource, mappingTarget );
-
-                memberMapping.Decoration = memberExpression => Expression.IfThenElse
-                (
-                    Expression.TypeIs( subParam, typeof( SimpleParam ) ),
-                    Expression.Assign( Expression.Property( context.TargetInstance, propertyInfo ), Expression.Constant( null, propertyInfo.PropertyType ) ),
-                    memberExpression
-                );
-
-                var exp = base.GetComplexMemberExpression( memberMapping )
-                    .ReplaceParameter( context.TargetInstance, "instance" )
-                    .ReplaceParameter( subParam, "sourceInstance" )
-                    .ReplaceParameter( context.Mapper, "mapper" )
-                    .ReplaceParameter( context.ReferenceTracker, "referenceTracker" );
-
-                return Expression.IfThenElse
-                (
-                    Expression.TypeIs( subParam, typeof( SimpleParam ) ),
-
-                    Expression.Assign( Expression.Property( context.TargetInstance, propertyInfo ), Expression.Constant( null, propertyInfo.PropertyType ) ),
-
-                    exp
-                );
-            }
+            if( targetMemberType.IsBuiltIn( true ) ) return _spSource;
+            if( targetMemberType.IsEnumerable() ) return _apSource;
+            return _cpSource;
         }
 
         protected MemberInfo[] SelectTargetMembers( Type targetType )

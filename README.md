@@ -1,5 +1,4 @@
 # UltraMapper.Parsing
-Common classes and interfaces for parsers based on UltraMapper.
 
 Provides a common way to map data to strong-typed object using UltraMapper,
 effectively decoupling the string-analysis stage and the mapping-stage of any parser.

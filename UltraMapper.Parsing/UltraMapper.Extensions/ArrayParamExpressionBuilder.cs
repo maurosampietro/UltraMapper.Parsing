@@ -11,22 +11,28 @@ namespace UltraMapper.Parsing.Extensions
         public ArrayParamExpressionBuilder( Configuration configuration )
             : base( configuration ) { }
 
-        public override bool CanHandle( Type source, Type target )
+        public override bool CanHandle( Mapping mapping)
         {
-            return source == typeof( ArrayParam ) && 
-                target != typeof( ArrayParam );
+            var source = mapping.Source;
+            var target = mapping.Target;
+
+            return source.EntryType == typeof( ArrayParam ) &&
+                target.EntryType != typeof( ArrayParam );
         }
 
-        public override LambdaExpression GetMappingExpression( Type source, Type target, IMappingOptions options )
+        public override LambdaExpression GetMappingExpression( Mapping mapping )
         {
-            var context = (CollectionMapperContext)this.GetMapperContext( source, target, options );
+            var source = mapping.Source;
+            var target = mapping.Target;
+
+            var context = (CollectionMapperContext)this.GetMapperContext( mapping );
 
             Expression items = context.SourceInstance;
-            if( source == typeof( ArrayParam ) )
+            if( source.EntryType == typeof( ArrayParam ) )
                 items = Expression.Property( context.SourceInstance, nameof( ArrayParam.Items ) );
 
-            Type targetType = target;
-            if( target.IsInterface || target.IsAbstract )
+            Type targetType = target.EntryType;
+            if( target.EntryType.IsInterface || target.EntryType.IsAbstract )
                 targetType = typeof( List<> ).MakeGenericType( context.TargetCollectionElementType );
 
             LambdaExpression mappingExpression = null;
@@ -49,7 +55,7 @@ namespace UltraMapper.Parsing.Extensions
             (
                 Expression.TypeIs( context.SourceInstance, typeof( SimpleParam ) ),
 
-                Expression.Assign( context.TargetInstance, Expression.Constant( null, target ) ),
+                Expression.Assign( context.TargetInstance, Expression.Constant( null, target.EntryType ) ),
 
                 body
             );

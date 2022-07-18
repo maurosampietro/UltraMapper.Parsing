@@ -11,10 +11,13 @@ namespace UltraMapper.Parsing.Extensions
         public SimpleParamExpressionBuilder( Configuration configuration )
                : base( configuration ) { }
 
-        public override bool CanHandle( Type source, Type target )
+        public override bool CanHandle( Mapping mapping )
         {
-            return source == typeof( SimpleParam ) 
-                && target.IsBuiltIn( true );
+            var source = mapping.Source;
+            var target = mapping.Target;
+
+            return source.EntryType == typeof( SimpleParam ) 
+                && target.EntryType.IsBuiltIn( true );
         }
 
         protected override Expression GetValueExpression( MapperContext context )

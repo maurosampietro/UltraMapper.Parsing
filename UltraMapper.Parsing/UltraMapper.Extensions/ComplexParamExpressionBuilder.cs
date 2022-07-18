@@ -8,6 +8,32 @@ using UltraMapper.MappingExpressionBuilders;
 
 namespace UltraMapper.Parsing.Extensions
 {
+    //public class ComplexParamExpressionBuilder2 : ReferenceMapper
+    //{
+    //    public ComplexParamExpressionBuilder( Configuration configuration )
+    //        : base( configuration ) { }
+
+    //    public override bool CanHandle( Type source, Type target )
+    //    {
+    //        return source == typeof( IParsedParam ) &&
+    //            !target.IsBuiltIn( false );
+    //    }
+
+    //    public override LambdaExpression GetMappingExpression( Type source, Type target, IMappingOptions options )
+    //    {
+    //        var mappingSource = new MappingSource<IParsedParam, ComplexParam>( s => (ComplexParam)s );
+    //        var mappingTarget = new MappingTarget( target );
+    //        var typeMapping = new TypeMapping( this.MapperConfiguration, mappingSource, mappingTarget );
+
+
+    //        var optionAttribute = targetMemberInfo.GetCustomAttribute<OptionAttribute>();
+    //        string memberNameLowerCase = String.IsNullOrWhiteSpace( optionAttribute?.Name ) ?
+    //            targetProp.Name.ToLower() : optionAttribute.Name.ToLower();
+
+    //        return memberMapping.MemberMappingExpression;
+    //    }
+    //}
+
     public class ComplexParamExpressionBuilder : ReferenceMapper
     {
         public bool CanMapByIndex { get; set; }
@@ -15,14 +41,20 @@ namespace UltraMapper.Parsing.Extensions
         public ComplexParamExpressionBuilder( Configuration configuration )
             : base( configuration ) { }
 
-        public override bool CanHandle( Type source, Type target )
+        public override bool CanHandle( Mapping mapping )
         {
-            return source == typeof( ComplexParam ) &&
-                target != typeof( ComplexParam ); //disallow cloning
+            var source = mapping.Source;
+            var target = mapping.Target;
+
+            return source.EntryType == typeof( ComplexParam ) &&
+            target.EntryType != typeof( ComplexParam ); //disallow cloning
         }
 
-        public override LambdaExpression GetMappingExpression( Type source, Type target, IMappingOptions options )
+        public override LambdaExpression GetMappingExpression( Mapping mapping )
         {
+            var source = mapping.Source;
+            var target = mapping.Target;
+
             //IGNORING FIELDS ON PURPOSE SINCE SUPPORTING FIELDS WILL FORCE 
             //THE USER TO ALWAYS SET OPTIONATTRIBUTE.ORDER IN ORDER TO MAP BY INDEX RELIABLY
             //(REFLECTION DO NOT GUARANTEE PROPERTIES AND FIELDS TO BE RETURNED IN DECLARED ORDER
@@ -32,8 +64,8 @@ namespace UltraMapper.Parsing.Extensions
             //if( target.IsValueType && !target.IsNullable() )
             //    throw new ArgumentException( $"Value types are not supported. {target.GetPrettifiedName()} is a value type." );
 
-            var context = this.GetMapperContext( source, target, options );
-            var targetMembers = this.SelectTargetMembers( target );
+            var context = this.GetMapperContext( mapping );
+            var targetMembers = this.SelectTargetMembers( target.EntryType );
 
             var subParam = Expression.Parameter( typeof( IParsedParam ), "paramLoopVar" );
             var subParamsAccess = Expression.Property( context.SourceInstance, nameof( ComplexParam.SubParams ) );
@@ -85,7 +117,9 @@ namespace UltraMapper.Parsing.Extensions
             MemberInfo[] targetMembers, ParameterExpression subParam,
             ParameterExpression paramNameLowerCase )
         {
-            var typeMapping = MapperConfiguration[ typeof( IParsedParam ), context.TargetInstance.Type ];
+            //var typeMapping = MapperConfiguration[ _cpSource, context.TargetInstance.Type ];
+            var typeMapping = new TypeMapping( MapperConfiguration, _cpSource, new MappingTarget( context.TargetInstance.Type ) );
+            MapperConfiguration.TypeMappingTree.Add( typeMapping );
 
             for( int i = 0; i < targetMembers.Length; i++ )
             {
@@ -102,15 +136,24 @@ namespace UltraMapper.Parsing.Extensions
                 string memberNameLowerCase = String.IsNullOrWhiteSpace( optionAttribute?.Name ) ?
                     targetProp.Name.ToLower() : optionAttribute.Name.ToLower();
 
-                var memberExp = typeMapping.MemberToMemberMappingExpressions[ i ]
+                var memberExp = memberMapping.MemberMappingExpression.Body
                     .ReplaceParameter( context.TargetInstance, "instance" )
                     .ReplaceParameter( subParam, "sourceInstance" )
                     .ReplaceParameter( context.Mapper, "mapper" )
                     .ReplaceParameter( context.ReferenceTracker, "referenceTracker" );
 
-                Expression exp = memberMapping.TargetType.IsBuiltIn( true ) ? memberExp : Expression.IfThenElse
+                Expression exp = memberMapping.Target.EntryType.IsBuiltIn( true ) ?
+                    memberExp : Expression.IfThenElse
                 (
-                    Expression.TypeIs( subParam, typeof( SimpleParam ) ),
+                    Expression.AndAlso
+                    (
+                        Expression.TypeIs( subParam, typeof( SimpleParam ) ),
+                        Expression.Equal
+                        (
+                            Expression.Property( Expression.Convert( subParam, typeof( SimpleParam ) ), nameof( SimpleParam.Value ) ),
+                            Expression.Constant( null, typeof( string ) )
+                        )
+                    ),
 
                     Expression.Assign( Expression.Property( context.TargetInstance, targetProp ),
                         Expression.Constant( null, targetProp.PropertyType ) ),

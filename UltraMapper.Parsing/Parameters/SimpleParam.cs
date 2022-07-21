@@ -1,4 +1,6 @@
-﻿namespace UltraMapper.Parsing
+﻿using System;
+
+namespace UltraMapper.Parsing
 {
     public class SimpleParam : IParsedParam
     {

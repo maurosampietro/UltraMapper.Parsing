@@ -193,12 +193,14 @@ namespace UltraMapper.Parsing.Extensions
             }
         }
 
+        private static readonly IMappingSource _blSource = new MappingSource<IParsedParam, bool>( s => ((BooleanParam)s).BoolValue );
         private static readonly IMappingSource _spSource = new MappingSource<IParsedParam, string>( s => ((SimpleParam)s).Value );
         private static readonly IMappingSource _cpSource = new MappingSource<IParsedParam, ComplexParam>( s => (ComplexParam)s );
         private static readonly IMappingSource _apSource = new MappingSource<IParsedParam, IReadOnlyList<IParsedParam>>( s => ((ArrayParam)s).Items );
 
         private static IMappingSource GetMappingSource( Type targetMemberType )
         {
+            if( targetMemberType == typeof( bool ) ) return _blSource;
             if( targetMemberType.IsBuiltIn( true ) ) return _spSource;
             if( targetMemberType.IsEnumerable() ) return _apSource;
             return _cpSource;

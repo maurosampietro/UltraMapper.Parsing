@@ -38,9 +38,6 @@ namespace UltraMapper.Parsing.Extensions
     {
         public bool CanMapByIndex { get; set; }
 
-        public ComplexParamExpressionBuilder( Configuration configuration )
-            : base( configuration ) { }
-
         public override bool CanHandle( Mapping mapping )
         {
             var source = mapping.Source;
@@ -93,7 +90,7 @@ namespace UltraMapper.Parsing.Extensions
             (
                 new[] { context.Mapper, subParam, paramNameLowerCase },
 
-                Expression.Assign( context.Mapper, Expression.Constant( _mapper ) ),
+                Expression.Assign( context.Mapper, Expression.Constant( context.MapperInstance ) ),
 
                 ExpressionLoops.ForEach( subParamsAccess, subParam, Expression.Block
                 (
@@ -118,8 +115,8 @@ namespace UltraMapper.Parsing.Extensions
             ParameterExpression paramNameLowerCase )
         {
             //var typeMapping = MapperConfiguration[ _cpSource, context.TargetInstance.Type ];
-            var typeMapping = new TypeMapping( MapperConfiguration, _cpSource, new MappingTarget( context.TargetInstance.Type ) );
-            MapperConfiguration.TypeMappingTree.Add( typeMapping );
+            var typeMapping = new TypeMapping( context.MapperConfiguration, _cpSource, new MappingTarget( context.TargetInstance.Type ) );
+            context.MapperConfiguration.TypeMappingTree.Add( typeMapping );
 
             for( int i = 0; i < targetMembers.Length; i++ )
             {

@@ -8,9 +8,6 @@ namespace UltraMapper.Parsing.Extensions
 {
     public class SimpleParamExpressionBuilder : PrimitiveMapperBase
     {
-        public SimpleParamExpressionBuilder( Configuration configuration )
-               : base( configuration ) { }
-
         public override bool CanHandle( Mapping mapping )
         {
             var source = mapping.Source;
@@ -25,7 +22,7 @@ namespace UltraMapper.Parsing.Extensions
             var paramValueExp = Expression.Property( context.SourceInstance,
                 nameof( SimpleParam.Value ) );
 
-            var conversion = MapperConfiguration[ typeof( string ),
+            var conversion = context.MapperConfiguration[ typeof( string ),
                 context.TargetInstance.Type ].MappingExpression;
 
             //first param can be the ReferenceTracker

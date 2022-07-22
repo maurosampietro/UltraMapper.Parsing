@@ -8,9 +8,6 @@ namespace UltraMapper.Parsing.Extensions
 {
     public class ArrayParamExpressionBuilder : ArrayMapper
     {
-        public ArrayParamExpressionBuilder( Configuration configuration )
-            : base( configuration ) { }
-
         public override bool CanHandle( Mapping mapping)
         {
             var source = mapping.Source;
@@ -46,7 +43,7 @@ namespace UltraMapper.Parsing.Extensions
             //}
             //else
             {
-                mappingExpression = MapperConfiguration[ typeof( IEnumerable<IParsedParam> ), targetType ].MappingExpression;
+                mappingExpression = context.MapperConfiguration[ typeof( IEnumerable<IParsedParam> ), targetType ].MappingExpression;
                 body = Expression.Invoke( mappingExpression, context.ReferenceTracker, items,
                        Expression.Convert( context.TargetInstance, targetType ) );
             }

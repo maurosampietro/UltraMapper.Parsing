@@ -8,32 +8,6 @@ using UltraMapper.MappingExpressionBuilders;
 
 namespace UltraMapper.Parsing.Extensions
 {
-    //public class ComplexParamExpressionBuilder2 : ReferenceMapper
-    //{
-    //    public ComplexParamExpressionBuilder( Configuration configuration )
-    //        : base( configuration ) { }
-
-    //    public override bool CanHandle( Type source, Type target )
-    //    {
-    //        return source == typeof( IParsedParam ) &&
-    //            !target.IsBuiltIn( false );
-    //    }
-
-    //    public override LambdaExpression GetMappingExpression( Type source, Type target, IMappingOptions options )
-    //    {
-    //        var mappingSource = new MappingSource<IParsedParam, ComplexParam>( s => (ComplexParam)s );
-    //        var mappingTarget = new MappingTarget( target );
-    //        var typeMapping = new TypeMapping( this.MapperConfiguration, mappingSource, mappingTarget );
-
-
-    //        var optionAttribute = targetMemberInfo.GetCustomAttribute<OptionAttribute>();
-    //        string memberNameLowerCase = String.IsNullOrWhiteSpace( optionAttribute?.Name ) ?
-    //            targetProp.Name.ToLower() : optionAttribute.Name.ToLower();
-
-    //        return memberMapping.MemberMappingExpression;
-    //    }
-    //}
-
     public class ComplexParamExpressionBuilder : ReferenceMapper
     {
         public bool CanMapByIndex { get; set; }

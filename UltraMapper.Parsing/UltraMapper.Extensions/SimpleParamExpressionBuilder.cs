@@ -13,13 +13,13 @@ namespace UltraMapper.Parsing.Extensions
             var source = mapping.Source;
             var target = mapping.Target;
 
-            return source.EntryType == typeof( SimpleParam ) 
+            return source.EntryType == typeof( SimpleParam )
                 && target.EntryType.IsBuiltIn( true );
         }
 
         protected override Expression GetValueExpression( MapperContext context )
         {
-            var paramValueExp = Expression.Property( context.SourceInstance,
+            var getParamValue = Expression.Property( context.SourceInstance,
                 nameof( SimpleParam.Value ) );
 
             var conversion = context.MapperConfiguration[ typeof( string ),
@@ -27,12 +27,27 @@ namespace UltraMapper.Parsing.Extensions
 
             //first param can be the ReferenceTracker
             var replaceParam = conversion.Parameters
-                .First( p => p.Type == paramValueExp.Type );
+                .First( p => p.Type == getParamValue.Type );
 
-            return conversion.Body.ReplaceParameter(
-                paramValueExp, replaceParam.Name );
+            var exp = conversion.Body.ReplaceParameter(
+                getParamValue, replaceParam.Name );
 
-            //return Expression.Invoke( conversion, paramValueExp );
+            if( context.TargetInstance.Type.IsNullable() )
+            {
+                var labelTarget = Expression.Label( context.TargetInstance.Type, "returnTarget" );
+                exp = Expression.Block
+                (
+                    Expression.IfThen
+                    (
+                        Expression.Equal( context.SourceInstance, Expression.Constant( null, context.SourceInstance.Type ) ),
+                        Expression.Return( labelTarget, Expression.Default( context.TargetInstance.Type ) )
+                    ),
+
+                    Expression.Label( labelTarget, exp )
+                );
+            }
+
+            return exp;
         }
     }
 }

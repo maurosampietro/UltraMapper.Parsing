@@ -23,5 +23,6 @@ namespace UltraMapper.Parsing
         public IParsedParam this[ int index ] => this.Items[ index ];
         public void Add( IParsedParam item ) => _items.Add( item );
         public void Clear() => _items.Clear();
+        public int Count() => _items.Count();
     }
 }

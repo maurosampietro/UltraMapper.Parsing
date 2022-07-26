@@ -1,60 +1,71 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using UltraMapper.Internals;
 using UltraMapper.MappingExpressionBuilders;
 
 namespace UltraMapper.Parsing.Extensions
 {
-    public class ArrayParamExpressionBuilder : ArrayMapper
+    public class ArrayParamExpressionBuilder : ReferenceMapper
     {
-        public override bool CanHandle( Mapping mapping)
+        private static Expression<Func<IReadOnlyList<IParsedParam>, IEnumerable<SimpleParam>>>
+            CastToSpList => ( source ) => source.Cast<SimpleParam>();
+
+        private static Expression<Func<IReadOnlyList<IParsedParam>, IEnumerable<ComplexParam>>>
+            CastToCpList => ( source ) => source.Cast<ComplexParam>();
+
+        public override bool CanHandle( Mapping mapping )
         {
             var source = mapping.Source;
             var target = mapping.Target;
 
-            return source.EntryType == typeof( ArrayParam ) &&
-                target.EntryType != typeof( ArrayParam );
+            return (source.ReturnType == typeof( ArrayParam ) &&
+                target.ReturnType != typeof( ArrayParam ) &&
+                target.ReturnType.IsEnumerable() //icollection would be better
+               )
+               ||
+
+                (source.EntryType == typeof( IParsedParam ) &&
+                target.EntryType.IsEnumerable());
         }
 
         public override LambdaExpression GetMappingExpression( Mapping mapping )
         {
-            var source = mapping.Source;
             var target = mapping.Target;
+            var context = this.GetMapperContext( mapping );
 
-            var context = (CollectionMapperContext)this.GetMapperContext( mapping );
+            Expression items =
+                Expression.Property( context.SourceInstance, nameof( ArrayParam.Items ) );
 
-            Expression items = context.SourceInstance;
-            if( source.EntryType == typeof( ArrayParam ) )
-                items = Expression.Property( context.SourceInstance, nameof( ArrayParam.Items ) );
 
             Type targetType = target.EntryType;
-            if( target.EntryType.IsInterface || target.EntryType.IsAbstract )
-                targetType = typeof( List<> ).MakeGenericType( context.TargetCollectionElementType );
+            //if( target.EntryType.IsInterface || target.EntryType.IsAbstract )
+            //    targetType = typeof( List<> ).MakeGenericType( context.TargetCollectionElementType );
 
-            LambdaExpression mappingExpression = null;
-            Expression body = null;
-
-            //if( context.TargetCollectionElementType.IsBuiltIn( true ) )
-            //{
-            //    mappingExpression = MapperConfiguration[ typeof( IEnumerable<SimpleParam> ), targetType ].MappingExpression;
-            //    body = Expression.Invoke( mappingExpression, context.ReferenceTracker, Expression.Invoke( extractValues, items ),
-            //            Expression.Convert( context.TargetInstance, targetType ) );
-            //}
-            //else
+            Type sourceType;
+            if( context.TargetInstance.Type.GetCollectionGenericType().IsBuiltIn( true ) )
             {
-                mappingExpression = context.MapperConfiguration[ typeof( IEnumerable<IParsedParam> ), targetType ].MappingExpression;
-                body = Expression.Invoke( mappingExpression, context.ReferenceTracker, items,
-                       Expression.Convert( context.TargetInstance, targetType ) );
+                sourceType = typeof( IEnumerable<SimpleParam> );
+                items = Expression.Invoke( CastToSpList, items );
+            }
+            else
+            {
+                sourceType = typeof( IEnumerable<ComplexParam> );
+                items = Expression.Invoke( CastToCpList, items );
             }
 
-            body = Expression.IfThenElse
+            var mappingExpression = context.MapperConfiguration[ sourceType, targetType ].MappingExpression;
+
+            var body = Expression.IfThenElse
             (
                 Expression.TypeIs( context.SourceInstance, typeof( SimpleParam ) ),
 
                 Expression.Assign( context.TargetInstance, Expression.Constant( null, target.EntryType ) ),
 
-                body
+                Expression.Invoke( mappingExpression, context.ReferenceTracker, items,
+                    Expression.Convert( context.TargetInstance, targetType ) )
             );
 
             var delegateType = typeof( Action<,,> ).MakeGenericType(

@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using UltraMapper.Internals;
 using UltraMapper.MappingExpressionBuilders;
 
 namespace UltraMapper.Parsing.Extensions
 {
-    public class ArrayParamExpressionBuilder : ReferenceMapper
+    public class ArrayParamExpressionBuilder : CollectionMapper
     {
         private static Expression<Func<IReadOnlyList<IParsedParam>, IEnumerable<SimpleParam>>>
             CastToSpList => ( source ) => source.Cast<SimpleParam>();
@@ -26,7 +25,6 @@ namespace UltraMapper.Parsing.Extensions
                 target.ReturnType.IsEnumerable() //icollection would be better
                )
                ||
-
                 (source.EntryType == typeof( IParsedParam ) &&
                 target.EntryType.IsEnumerable());
         }
@@ -41,8 +39,8 @@ namespace UltraMapper.Parsing.Extensions
 
 
             Type targetType = target.EntryType;
-            //if( target.EntryType.IsInterface || target.EntryType.IsAbstract )
-            //    targetType = typeof( List<> ).MakeGenericType( context.TargetCollectionElementType );
+            if( target.EntryType.IsInterface || target.EntryType.IsAbstract )
+                targetType = typeof( List<> ).MakeGenericType( context.TargetInstance.Type.GetCollectionGenericType() );
 
             Type sourceType;
             if( context.TargetInstance.Type.GetCollectionGenericType().IsBuiltIn( true ) )
@@ -58,19 +56,27 @@ namespace UltraMapper.Parsing.Extensions
 
             var mappingExpression = context.MapperConfiguration[ sourceType, targetType ].MappingExpression;
 
-            var body = Expression.IfThenElse
+            var body = Expression.Block
             (
-                Expression.TypeIs( context.SourceInstance, typeof( SimpleParam ) ),
+                Expression.IfThenElse
+                (
+                    Expression.TypeIs( context.SourceInstance, typeof( SimpleParam ) ),
 
-                Expression.Assign( context.TargetInstance, Expression.Constant( null, target.EntryType ) ),
+                    Expression.Assign( context.TargetInstance, Expression.Constant( null, target.EntryType ) ),
 
-                Expression.Invoke( mappingExpression, context.ReferenceTracker, items,
-                    Expression.Convert( context.TargetInstance, targetType ) )
+                    Expression.Assign( context.TargetInstance,
+                        Expression.Invoke( mappingExpression, context.ReferenceTracker, items,
+                            Expression.Convert( context.TargetInstance, targetType ) ) )
+                ),
+
+#if DEBUG
+                Expression.Invoke( _debugExp, context.TargetInstance ),
+#endif
+                context.TargetInstance
             );
 
-            var delegateType = typeof( Action<,,> ).MakeGenericType(
-                 context.ReferenceTracker.Type, context.SourceInstance.Type,
-                 context.TargetInstance.Type );
+            var delegateType = typeof( UltraMapperDelegate<,> )
+                .MakeGenericType( context.SourceInstance.Type, context.TargetInstance.Type );
 
             return Expression.Lambda( delegateType, body,
                 context.ReferenceTracker, context.SourceInstance, context.TargetInstance );

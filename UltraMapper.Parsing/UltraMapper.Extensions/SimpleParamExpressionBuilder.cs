@@ -32,14 +32,17 @@ namespace UltraMapper.Parsing.Extensions
             var exp = conversion.Body.ReplaceParameter(
                 getParamValue, replaceParam.Name );
 
-            if( context.TargetInstance.Type.IsNullable() )
+            if(context.TargetInstance.Type.IsNullable())
             {
                 var labelTarget = Expression.Label( context.TargetInstance.Type, "returnTarget" );
                 exp = Expression.Block
                 (
                     Expression.IfThen
                     (
-                        Expression.Equal( context.SourceInstance, Expression.Constant( null, context.SourceInstance.Type ) ),
+                        Expression.Or(
+                            Expression.Equal( context.SourceInstance, Expression.Constant( null, context.SourceInstance.Type ) ),
+                            Expression.Equal( getParamValue, Expression.Constant( null, typeof( string ) ) )
+                        ),
                         Expression.Return( labelTarget, Expression.Default( context.TargetInstance.Type ) )
                     ),
 

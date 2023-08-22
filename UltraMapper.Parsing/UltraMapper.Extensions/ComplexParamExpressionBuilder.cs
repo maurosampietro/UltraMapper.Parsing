@@ -18,7 +18,7 @@ namespace UltraMapper.Parsing.Extensions
             var target = mapping.Target;
 
             return source.EntryType == typeof( ComplexParam ) &&
-            target.EntryType != typeof( ComplexParam ); //disallow cloning
+                target.EntryType != typeof( ComplexParam ); //disallow cloning
         }
 
         public override LambdaExpression GetMappingExpression( Mapping mapping )
@@ -70,15 +70,16 @@ namespace UltraMapper.Parsing.Extensions
                 (
                     Expression.Assign( paramNameLowerCase, paramNameToLower ),
                     paramNameDispatch
-                ) )
-            )
-            .ReplaceParameter( context.Mapper, "mapper" )
-            .ReplaceParameter( context.SourceInstance, "sourceInstance" )
-            .ReplaceParameter( context.TargetInstance, "targetInstance" );
+                ) ),
 
-            var delegateType = typeof( Action<,,> ).MakeGenericType(
-                 context.ReferenceTracker.Type, context.SourceInstance.Type,
-                 context.TargetInstance.Type );
+                context.TargetInstance
+            )
+            .ReplaceParameter( context.Mapper, context.Mapper.Name )
+            .ReplaceParameter( context.SourceInstance, context.SourceInstance.Name )
+            .ReplaceParameter( context.TargetInstance, context.TargetInstance.Name );
+
+            var delegateType = typeof( UltraMapperDelegate<,> )
+                .MakeGenericType( context.SourceInstance.Type, context.TargetInstance.Type );
 
             return Expression.Lambda( delegateType, expression,
                 context.ReferenceTracker, context.SourceInstance, context.TargetInstance );
@@ -91,6 +92,10 @@ namespace UltraMapper.Parsing.Extensions
             //var typeMapping = MapperConfiguration[ _cpSource, context.TargetInstance.Type ];
             var typeMapping = new TypeMapping( context.MapperConfiguration, _cpSource, new MappingTarget( context.TargetInstance.Type ) );
             context.MapperConfiguration.TypeMappingTree.Add( typeMapping );
+            //typeMapping._mappingSource.Add( _blSource );
+            //typeMapping._mappingSource.Add( _spSource );
+            //typeMapping._mappingSource.Add( _cpSource );
+            //typeMapping._mappingSource.Add( _apSource );
 
             for( int i = 0; i < targetMembers.Length; i++ )
             {
@@ -167,7 +172,7 @@ namespace UltraMapper.Parsing.Extensions
         private static readonly IMappingSource _blSource = new MappingSource<IParsedParam, bool>( s => ((BooleanParam)s).BoolValue );
         private static readonly IMappingSource _spSource = new MappingSource<IParsedParam, string>( s => ((SimpleParam)s).Value );
         private static readonly IMappingSource _cpSource = new MappingSource<IParsedParam, ComplexParam>( s => (ComplexParam)s );
-        private static readonly IMappingSource _apSource = new MappingSource<IParsedParam, IEnumerable<IParsedParam>>( s => ((ArrayParam)s).Items );
+        private static readonly IMappingSource _apSource = new MappingSource<IParsedParam, ArrayParam>( s => (ArrayParam)s );
 
         private static IMappingSource GetMappingSource( Type targetMemberType )
         {
@@ -179,7 +184,7 @@ namespace UltraMapper.Parsing.Extensions
 
         protected MemberInfo[] SelectTargetMembers( Type targetType )
         {
-            return targetType.GetProperties() //methods only supported at top level (in ParsedCommand)
+            return targetType.GetProperties() 
                 .Where( m => m.GetSetMethod() != null ) //must be assignable
                 .Where( m => m.GetIndexParameters().Length == 0 )//indexer not supported
                 .Select( ( m, index ) => new

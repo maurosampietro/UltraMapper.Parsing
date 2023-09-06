@@ -13,7 +13,7 @@ namespace UltraMapper.Parsing.Extensions
             CastToSpList => ( source ) => source.Cast<SimpleParam>();
 
         private static Expression<Func<IReadOnlyList<IParsedParam>, IEnumerable<ComplexParam>>>
-            CastToCpList => ( source ) => source.Cast<ComplexParam>();
+            CastToCpList => ( source ) => source.Select( t => t is SimpleParam ? null : t ).Cast<ComplexParam>();
 
         public override bool CanHandle( Mapping mapping )
         {
@@ -39,11 +39,11 @@ namespace UltraMapper.Parsing.Extensions
 
 
             Type targetType = target.EntryType;
-            if( target.EntryType.IsInterface || target.EntryType.IsAbstract )
+            if(target.EntryType.IsInterface || target.EntryType.IsAbstract)
                 targetType = typeof( List<> ).MakeGenericType( context.TargetInstance.Type.GetCollectionGenericType() );
 
             Type sourceType;
-            if( context.TargetInstance.Type.GetCollectionGenericType().IsBuiltIn( true ) )
+            if(context.TargetInstance.Type.GetCollectionGenericType().IsBuiltIn( true ))
             {
                 sourceType = typeof( IEnumerable<SimpleParam> );
                 items = Expression.Invoke( CastToSpList, items );
@@ -54,7 +54,8 @@ namespace UltraMapper.Parsing.Extensions
                 items = Expression.Invoke( CastToCpList, items );
             }
 
-            var mappingExpression = context.MapperConfiguration[ sourceType, targetType ].MappingExpression;
+            var mapCfg = context.MapperConfiguration[ sourceType, targetType ];
+            var mappingExpression = mapCfg.MappingExpression;
 
             var body = Expression.Block
             (

@@ -39,10 +39,10 @@ namespace UltraMapper.Parsing.Extensions
                 (
                     Expression.IfThen
                     (
-                        Expression.Or(
+                        //Expression.Or(
                             Expression.Equal( context.SourceInstance, Expression.Constant( null, context.SourceInstance.Type ) ),
-                            Expression.Equal( getParamValue, Expression.Constant( null, typeof( string ) ) )
-                        ),
+                            //Expression.Equal( getParamValue, Expression.Constant( null, typeof( string ) ) )
+                        //),
                         Expression.Return( labelTarget, Expression.Default( context.TargetInstance.Type ) )
                     ),
 

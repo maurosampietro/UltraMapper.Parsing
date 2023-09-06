@@ -11,6 +11,10 @@
             Text = text;
         }
 
+#if NET5_0_OR_GREATER
         public override string Value => Text[ ValueStartIndex..ValueEndIndex ];
+#else
+        public override string Value => Text.Substring( ValueStartIndex, ValueEndIndex - ValueStartIndex );
+#endif
     }
 }

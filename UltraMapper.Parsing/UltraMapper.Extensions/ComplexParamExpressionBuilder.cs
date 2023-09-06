@@ -49,7 +49,7 @@ namespace UltraMapper.Parsing.Extensions
                 subParam, paramNameLowerCase ).ToArray();
 
             Expression paramNameDispatch = null;
-            if( this.CanMapByIndex )
+            if(this.CanMapByIndex)
             {
                 var paramNameIfElseChain = GetIfElseChain( propertiesAssigns );
                 paramNameDispatch = paramNameIfElseChain;
@@ -78,6 +78,21 @@ namespace UltraMapper.Parsing.Extensions
             .ReplaceParameter( context.SourceInstance, context.SourceInstance.Name )
             .ReplaceParameter( context.TargetInstance, context.TargetInstance.Name );
 
+            var labelTarget = Expression.Label( context.TargetInstance.Type, "returnTarget" );
+            expression = Expression.Block
+            (
+                Expression.IfThen
+                (
+                        //Expression.Or(
+                        Expression.Equal( context.SourceInstance, Expression.Constant( null, context.SourceInstance.Type ) ),
+                    //Expression.Equal( getParamValue, Expression.Constant( null, typeof( string ) ) )
+                    //),
+                    Expression.Return( labelTarget, Expression.Constant( null, context.TargetInstance.Type ) )
+                ),
+
+                Expression.Label( labelTarget, expression )
+            );
+
             var delegateType = typeof( UltraMapperDelegate<,> )
                 .MakeGenericType( context.SourceInstance.Type, context.TargetInstance.Type );
 
@@ -97,7 +112,7 @@ namespace UltraMapper.Parsing.Extensions
             //typeMapping._mappingSource.Add( _cpSource );
             //typeMapping._mappingSource.Add( _apSource );
 
-            for( int i = 0; i < targetMembers.Length; i++ )
+            for(int i = 0; i < targetMembers.Length; i++)
             {
                 var targetMemberInfo = targetMembers[ i ];
                 var targetMemberType = targetMemberInfo.GetMemberType();
@@ -137,7 +152,7 @@ namespace UltraMapper.Parsing.Extensions
                     memberExp
                 );
 
-                if( this.CanMapByIndex )
+                if(this.CanMapByIndex)
                 {
                     yield return Expression.IfThen
                     (
@@ -176,15 +191,15 @@ namespace UltraMapper.Parsing.Extensions
 
         private static IMappingSource GetMappingSource( Type targetMemberType )
         {
-            if( targetMemberType == typeof( bool ) ) return _blSource;
-            if( targetMemberType.IsBuiltIn( true ) ) return _spSource;
-            if( targetMemberType.IsEnumerable() ) return _apSource;
+            if(targetMemberType == typeof( bool )) return _blSource;
+            if(targetMemberType.IsBuiltIn( true )) return _spSource;
+            if(targetMemberType.IsEnumerable()) return _apSource;
             return _cpSource;
         }
 
         protected MemberInfo[] SelectTargetMembers( Type targetType )
         {
-            return targetType.GetProperties() 
+            return targetType.GetProperties()
                 .Where( m => m.GetSetMethod() != null ) //must be assignable
                 .Where( m => m.GetIndexParameters().Length == 0 )//indexer not supported
                 .Select( ( m, index ) => new
@@ -204,12 +219,12 @@ namespace UltraMapper.Parsing.Extensions
         {
             IEnumerable<SwitchCase> getSwitchCases()
             {
-                foreach( ConditionalExpression item in propertiesAssigns )
+                foreach(ConditionalExpression item in propertiesAssigns)
                 {
                     var caseTest = ((BinaryExpression)item.Test).Left;
 
                     var caseBody = item.IfTrue;
-                    if( caseBody.Type != typeof( void ) )
+                    if(caseBody.Type != typeof( void ))
                         caseBody = Expression.Block( typeof( void ), caseBody );
 
                     yield return Expression.SwitchCase( caseBody, caseTest );
@@ -224,7 +239,7 @@ namespace UltraMapper.Parsing.Extensions
         {
             var item = (ConditionalExpression)propertiesAssigns[ i ];
 
-            if( i == propertiesAssigns.Length - 1 )
+            if(i == propertiesAssigns.Length - 1)
                 return item;
 
             return Expression.IfThenElse( item.Test, item.IfTrue,

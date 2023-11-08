@@ -2,10 +2,12 @@
 
 namespace UltraMapper.Parsing
 {
-    public class SimpleParam : IParsedParam
+    public sealed class SimpleParam : IParsedParam
     {
-        public string Name { get; set; }
-        public int Index { get; set; }
-        public virtual string Value { get; set; }
+        public static readonly SimpleParam ANONYMOUS_NULL = new SimpleParam() { Name = String.Empty, Value = null };
+
+        public string Name { get; set; } = String.Empty;
+        public int Index { get; set; } = 0;
+        public string Value { get; set; }
     }
 }

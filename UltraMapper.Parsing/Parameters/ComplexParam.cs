@@ -15,27 +15,27 @@ namespace UltraMapper.Parsing
             get
             {
                 return _params ??= new List<IParsedParam>()
-                    .Concat( Arrays )
+                    .Concat( Array )
                     .Concat( Complex )
-                    .Concat( Simples )
+                    .Concat( Simple )
                     .OrderBy( p => p.Index )
                     .ToList();
             }
 
             set
             {
-                Arrays.Clear();
+                Array.Clear();
                 Complex.Clear();
-                Simples.Clear();
+                Simple.Clear();
 
                 foreach(var item in value)
                 {
                     if(item is ComplexParam cp2)
                         this.Complex.Add( cp2 );
                     else if(item is SimpleParam sp)
-                        this.Simples.Add( sp );
+                        this.Simple.Add( sp );
                     else if(item is ArrayParam ap)
-                        this.Arrays.Add( ap );
+                        this.Array.Add( ap );
                 }
             }
         }
@@ -44,10 +44,15 @@ namespace UltraMapper.Parsing
             => this.SubParams[ index ];
 
         //in case of mapping to multidimensional arrays this is needed
-        public int Count => Arrays.Count + Complex.Count + Simples.Count;
+        public int Count => Array.Count + Complex.Count + Simple.Count;
 
-        public List<ArrayParam> Arrays { get; } = new List<ArrayParam>();
+        public List<ArrayParam> Array { get; } = new List<ArrayParam>();
         public List<ComplexParam> Complex { get; } = new List<ComplexParam>();
-        public List<SimpleParam> Simples { get; } = new List<SimpleParam>();
+        public List<SimpleParam> Simple { get; } = new List<SimpleParam>();
+
+        public bool CompareName( string otherName, StringComparison comparison )
+        {
+            throw new NotImplementedException();
+        }
     }
 }

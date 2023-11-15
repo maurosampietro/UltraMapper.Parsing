@@ -133,8 +133,8 @@ namespace UltraMapper.Parsing.Extensions
             var subParam = Expression.Parameter( typeof( ArrayParam ), "arrayParamLoopVar" );
 
             var subParamsAccess = context.SourceInstance.Type == typeof( ComplexParam ) ?
-                Expression.Property( context.SourceInstance, nameof( ComplexParam.Arrays ) ) :
-                Expression.Property( Expression.Convert( context.SourceInstance, typeof( ComplexParam ) ), nameof( ComplexParam.Arrays ) );
+                Expression.Property( context.SourceInstance, nameof( ComplexParam.Array ) ) :
+                Expression.Property( Expression.Convert( context.SourceInstance, typeof( ComplexParam ) ), nameof( ComplexParam.Array ) );
 
             targetMembers = targetMembers.Where( t => !t.GetMemberType().IsBuiltIn( true ) && t.GetMemberType().IsEnumerable() ).ToArray();
             var propertiesAssigns = GetArrayMemberAssignments( context, targetMembers, subParam ).ToArray();
@@ -225,8 +225,8 @@ namespace UltraMapper.Parsing.Extensions
             var subParam = Expression.Parameter( typeof( SimpleParam ), "simpleParamLoopVar" );
 
             var subParamsAccess = context.SourceInstance.Type == typeof( ComplexParam ) ?
-                Expression.Property( context.SourceInstance, nameof( ComplexParam.Simples ) ) :
-                Expression.Property( Expression.Convert( context.SourceInstance, typeof( ComplexParam ) ), nameof( ComplexParam.Simples ) );
+                Expression.Property( context.SourceInstance, nameof( ComplexParam.Simple ) ) :
+                Expression.Property( Expression.Convert( context.SourceInstance, typeof( ComplexParam ) ), nameof( ComplexParam.Simple ) );
 
             var propertiesAssigns = GetSimpleMemberAssignments( context, targetMembers.Where( t => t.GetMemberType().IsBuiltIn( true ) ).ToArray(),
                 subParam ).ToArray();

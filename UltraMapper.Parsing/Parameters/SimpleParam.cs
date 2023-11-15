@@ -9,5 +9,10 @@ namespace UltraMapper.Parsing
         public string Name { get; set; } = String.Empty;
         public int Index { get; set; } = 0;
         public string Value { get; set; }
+
+        public bool CompareName( string otherName, StringComparison comparison )
+        {
+            throw new NotImplementedException();
+        }
     }
 }

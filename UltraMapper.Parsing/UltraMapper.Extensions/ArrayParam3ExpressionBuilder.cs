@@ -3,18 +3,20 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using UltraMapper.Internals;
 using UltraMapper.MappingExpressionBuilders;
+using UltraMapper.Parsing.Parameters2;
+using UltraMapper.Parsing.Parameters3;
 
 namespace UltraMapper.Parsing.Extensions
 {
-    public class ArrayParamExpressionBuilder : CollectionMapper
+    public class ArrayParam3ExpressionBuilder : CollectionMapper
     {
         public override bool CanHandle( Mapping mapping )
         {
             var source = mapping.Source;
             var target = mapping.Target;
 
-            return (source.ReturnType == typeof( ArrayParam ) &&
-                target.ReturnType != typeof( ArrayParam ) &&
+            return (source.ReturnType == typeof( ArrayParam3 ) &&
+                target.ReturnType != typeof( ArrayParam3 ) &&
                 target.ReturnType.IsEnumerable() //icollection would be better
                )
                ||
@@ -27,9 +29,9 @@ namespace UltraMapper.Parsing.Extensions
             var target = mapping.Target;
             var context = this.GetMapperContext( mapping );
 
-            Expression iParsedParamToArrayParam = Expression.Convert( context.SourceInstance, typeof( ArrayParam ) );
+            Expression iParsedParamToArrayParam2 = Expression.Convert( context.SourceInstance, typeof( ArrayParam3 ) );
             Expression items;
-            
+
             Type targetType = target.EntryType;
             if(target.EntryType.IsInterface || target.EntryType.IsAbstract)
                 targetType = typeof( List<> ).MakeGenericType( context.TargetInstance.Type.GetCollectionGenericType() );
@@ -37,13 +39,13 @@ namespace UltraMapper.Parsing.Extensions
             Type sourceType;
             if(context.TargetInstance.Type.GetCollectionGenericType().IsBuiltIn( true ))
             {
-                sourceType = typeof( List<SimpleParam> );
-                items = Expression.Property( iParsedParamToArrayParam, nameof( ArrayParam.Simple ) );
+                sourceType = typeof( List<SimpleParam2> );
+                items = Expression.Property( iParsedParamToArrayParam2, nameof( ArrayParam3.Simple ) );
             }
             else
             {
-                sourceType = typeof( List<ComplexParam> );
-                items = Expression.Property( iParsedParamToArrayParam, nameof( ArrayParam.Complex ) );
+                sourceType = typeof( List<ComplexParam3> );
+                items = Expression.Property( iParsedParamToArrayParam2, nameof( ArrayParam3.Complex ) );
             }
 
             var mapCfg = context.MapperConfiguration[ sourceType, targetType ];
@@ -53,7 +55,7 @@ namespace UltraMapper.Parsing.Extensions
             (
                 Expression.IfThenElse
                 (
-                    Expression.TypeIs( context.SourceInstance, typeof( SimpleParam ) ),
+                    Expression.TypeIs( context.SourceInstance, typeof( SimpleParam2 ) ),
 
                     Expression.Assign( context.TargetInstance, Expression.Constant( null, target.EntryType ) ),
 

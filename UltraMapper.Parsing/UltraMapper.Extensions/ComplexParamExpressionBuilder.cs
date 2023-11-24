@@ -81,7 +81,7 @@ namespace UltraMapper.Parsing.Extensions
                 context.ReferenceTracker, context.SourceInstance, context.TargetInstance );
         }
 
-        private Expression LoopAllPropertiesAnyType( ReferenceMapperContext context, MemberInfo[] targetMembers )
+        private Expression LoopAllPropertiesAnyType( ReferenceMapperContext context, MemberInfoEx[] targetMembers )
         {
             //all params types
             var subParam = Expression.Parameter( typeof( IParsedParam ), "paramLoopVar" );
@@ -127,7 +127,7 @@ namespace UltraMapper.Parsing.Extensions
             return expression;
         }
 
-        private Expression LoopAllPropertiesArrayParams( ReferenceMapperContext context, MemberInfo[] targetMembers )
+        private Expression LoopAllPropertiesArrayParams( ReferenceMapperContext context, MemberInfoEx[] targetMembers )
         {
             //simple params
             var subParam = Expression.Parameter( typeof( ArrayParam ), "arrayParamLoopVar" );
@@ -136,7 +136,7 @@ namespace UltraMapper.Parsing.Extensions
                 Expression.Property( context.SourceInstance, nameof( ComplexParam.Array ) ) :
                 Expression.Property( Expression.Convert( context.SourceInstance, typeof( ComplexParam ) ), nameof( ComplexParam.Array ) );
 
-            targetMembers = targetMembers.Where( t => !t.GetMemberType().IsBuiltIn( true ) && t.GetMemberType().IsEnumerable() ).ToArray();
+            targetMembers = targetMembers.Where( t => !t.MemberInfo.GetMemberType().IsBuiltIn( true ) && t.MemberInfo.GetMemberType().IsEnumerable() ).ToArray();
             var propertiesAssigns = GetArrayMemberAssignments( context, targetMembers, subParam ).ToArray();
 
             Expression paramNameDispatch = Expression.Empty();
@@ -173,7 +173,7 @@ namespace UltraMapper.Parsing.Extensions
             return expression;
         }
 
-        private Expression LoopAllPropertiesComplexParams( ReferenceMapperContext context, MemberInfo[] targetMembers )
+        private Expression LoopAllPropertiesComplexParams( ReferenceMapperContext context, MemberInfoEx[] targetMembers )
         {
             //simple params
             var subParam = Expression.Parameter( typeof( ComplexParam ), "complexParamLoopVar" );
@@ -182,7 +182,7 @@ namespace UltraMapper.Parsing.Extensions
                 Expression.Property( context.SourceInstance, nameof( ComplexParam.Complex ) ) :
                 Expression.Property( Expression.Convert( context.SourceInstance, typeof( ComplexParam ) ), nameof( ComplexParam.Complex ) );
 
-            targetMembers = targetMembers.Where( t => !t.GetMemberType().IsBuiltIn( true ) && !t.GetMemberType().IsEnumerable() ).ToArray();
+            targetMembers = targetMembers.Where( t => !t.MemberInfo.GetMemberType().IsBuiltIn( true ) && !t.MemberInfo.GetMemberType().IsEnumerable() ).ToArray();
             var propertiesAssigns = GetComplexMemberAssignments( context, targetMembers, subParam ).ToArray();
 
             Expression paramNameDispatch = Expression.Empty();
@@ -219,7 +219,7 @@ namespace UltraMapper.Parsing.Extensions
             return expression;
         }
 
-        private Expression LoopAllPropertiesSimpleParams( ReferenceMapperContext context, MemberInfo[] targetMembers )
+        private Expression LoopAllPropertiesSimpleParams( ReferenceMapperContext context, MemberInfoEx[] targetMembers )
         {
             //simple params
             var subParam = Expression.Parameter( typeof( SimpleParam ), "simpleParamLoopVar" );
@@ -228,7 +228,7 @@ namespace UltraMapper.Parsing.Extensions
                 Expression.Property( context.SourceInstance, nameof( ComplexParam.Simple ) ) :
                 Expression.Property( Expression.Convert( context.SourceInstance, typeof( ComplexParam ) ), nameof( ComplexParam.Simple ) );
 
-            var propertiesAssigns = GetSimpleMemberAssignments( context, targetMembers.Where( t => t.GetMemberType().IsBuiltIn( true ) ).ToArray(),
+            var propertiesAssigns = GetSimpleMemberAssignments( context, targetMembers.Where( t => t.MemberInfo.GetMemberType().IsBuiltIn( true ) ).ToArray(),
                 subParam ).ToArray();
 
             Expression paramNameDispatch = Expression.Empty();
@@ -263,7 +263,7 @@ namespace UltraMapper.Parsing.Extensions
         }
 
         private IEnumerable<Expression> GetArrayMemberAssignments( ReferenceMapperContext context,
-        MemberInfo[] targetMembers, ParameterExpression subParam )
+        MemberInfoEx[] targetMembers, ParameterExpression subParam )
         {
             //var typeMapping = MapperConfiguration[ _cpSource, context.TargetInstance.Type ];
             var typeMapping = new TypeMapping( context.MapperConfiguration,
@@ -277,15 +277,15 @@ namespace UltraMapper.Parsing.Extensions
             for(int i = 0; i < targetMembers.Length; i++)
             {
                 var targetMemberInfo = targetMembers[ i ];
-                var targetMemberType = targetMemberInfo.GetMemberType();
+                var targetMemberType = targetMemberInfo.MemberInfo.GetMemberType();
 
                 var mappingSource = new MappingSource<ArrayParam, ArrayParam>( sourceInstance => sourceInstance );
-                var mappingTarget = new MappingTarget( targetMemberInfo );
+                var mappingTarget = new MappingTarget( targetMemberInfo.MemberInfo );
                 var memberMapping = typeMapping.AddMemberToMemberMapping( mappingSource, mappingTarget );
 
                 var targetProp = (PropertyInfo)memberMapping.TargetMember.MemberAccessPath.Last();
 
-                var optionAttribute = targetMemberInfo.GetCustomAttribute<OptionAttribute>();
+                var optionAttribute = targetMemberInfo.MemberInfo.GetCustomAttribute<OptionAttribute>();
                 string memberNameLowerCase = String.IsNullOrWhiteSpace( optionAttribute?.Name ) ?
                     targetProp.Name.ToLower() : optionAttribute.Name.ToLower();
 
@@ -347,7 +347,7 @@ namespace UltraMapper.Parsing.Extensions
         }
 
         private IEnumerable<Expression> GetComplexMemberAssignments( ReferenceMapperContext context,
-           MemberInfo[] targetMembers, ParameterExpression subParam )
+           MemberInfoEx[] targetMembers, ParameterExpression subParam )
         {
             //var typeMapping = MapperConfiguration[ _cpSource, context.TargetInstance.Type ];
             var typeMapping = new TypeMapping( context.MapperConfiguration,
@@ -361,15 +361,15 @@ namespace UltraMapper.Parsing.Extensions
             for(int i = 0; i < targetMembers.Length; i++)
             {
                 var targetMemberInfo = targetMembers[ i ];
-                var targetMemberType = targetMemberInfo.GetMemberType();
+                var targetMemberType = targetMemberInfo.MemberInfo.GetMemberType();
 
                 var mappingSource = new MappingSource<ComplexParam, ComplexParam>( sourceInstance => sourceInstance );
-                var mappingTarget = new MappingTarget( targetMemberInfo );
+                var mappingTarget = new MappingTarget( targetMemberInfo.MemberInfo );
                 var memberMapping = typeMapping.AddMemberToMemberMapping( mappingSource, mappingTarget );
 
                 var targetProp = (PropertyInfo)memberMapping.TargetMember.MemberAccessPath.Last();
 
-                var optionAttribute = targetMemberInfo.GetCustomAttribute<OptionAttribute>();
+                var optionAttribute = targetMemberInfo.MemberInfo.GetCustomAttribute<OptionAttribute>();
                 string memberNameLowerCase = String.IsNullOrWhiteSpace( optionAttribute?.Name ) ?
                     targetProp.Name.ToLower() : optionAttribute.Name.ToLower();
 
@@ -410,7 +410,7 @@ namespace UltraMapper.Parsing.Extensions
                             Expression.AndAlso
                             (
                                 Expression.Equal( paramName, Expression.Constant( String.Empty ) ),
-                                Expression.Equal( Expression.Constant( i ),
+                                Expression.Equal( Expression.Constant( targetMemberInfo.Index ),
                                     Expression.Property( subParam, nameof( IParsedParam.Index ) ) )
                             )
                         ),
@@ -430,7 +430,7 @@ namespace UltraMapper.Parsing.Extensions
         }
 
         private IEnumerable<Expression> GetSimpleMemberAssignments( ReferenceMapperContext context,
-            MemberInfo[] targetMembers, ParameterExpression subParam )
+            MemberInfoEx[] targetMembers, ParameterExpression subParam )
         {
             //var typeMapping = MapperConfiguration[ _cpSource, context.TargetInstance.Type ];
             var typeMapping = new TypeMapping( context.MapperConfiguration,
@@ -444,15 +444,15 @@ namespace UltraMapper.Parsing.Extensions
             for(int i = 0; i < targetMembers.Length; i++)
             {
                 var targetMemberInfo = targetMembers[ i ];
-                var targetMemberType = targetMemberInfo.GetMemberType();
+                var targetMemberType = targetMemberInfo.MemberInfo.GetMemberType();
 
                 var mappingSource = new MappingSource<SimpleParam, string>( sourceInstance => sourceInstance.Value );
-                var mappingTarget = new MappingTarget( targetMemberInfo );
+                var mappingTarget = new MappingTarget( targetMemberInfo.MemberInfo );
                 var memberMapping = typeMapping.AddMemberToMemberMapping( mappingSource, mappingTarget );
 
                 var targetProp = (PropertyInfo)memberMapping.TargetMember.MemberAccessPath.Last();
 
-                var optionAttribute = targetMemberInfo.GetCustomAttribute<OptionAttribute>();
+                var optionAttribute = targetMemberInfo.MemberInfo.GetCustomAttribute<OptionAttribute>();
                 string memberNameLowerCase = String.IsNullOrWhiteSpace( optionAttribute?.Name ) ?
                     targetProp.Name.ToLower() : optionAttribute.Name.ToLower();
 
@@ -495,7 +495,7 @@ namespace UltraMapper.Parsing.Extensions
                             Expression.AndAlso
                             (
                                 Expression.Equal( paramName, Expression.Constant( String.Empty ) ),
-                                Expression.Equal( Expression.Constant( i ),
+                                Expression.Equal( Expression.Constant( targetMemberInfo.Index ),
                                     Expression.Property( subParam, nameof( IParsedParam.Index ) ) )
                             )
                         ),
@@ -515,7 +515,7 @@ namespace UltraMapper.Parsing.Extensions
         }
 
         private IEnumerable<Expression> GetMemberAssignments( ReferenceMapperContext context,
-            MemberInfo[] targetMembers, ParameterExpression subParam )
+            MemberInfoEx[] targetMembers, ParameterExpression subParam )
         {
             //var typeMapping = MapperConfiguration[ _cpSource, context.TargetInstance.Type ];
             var typeMapping = new TypeMapping( context.MapperConfiguration, _cpSource, new MappingTarget( context.TargetInstance.Type ) );
@@ -528,15 +528,15 @@ namespace UltraMapper.Parsing.Extensions
             for(int i = 0; i < targetMembers.Length; i++)
             {
                 var targetMemberInfo = targetMembers[ i ];
-                var targetMemberType = targetMemberInfo.GetMemberType();
+                var targetMemberType = targetMemberInfo.MemberInfo.GetMemberType();
 
                 var mappingSource = GetMappingSource( targetMemberType );
-                var mappingTarget = new MappingTarget( targetMemberInfo );
+                var mappingTarget = new MappingTarget( targetMemberInfo.MemberInfo );
                 var memberMapping = typeMapping.AddMemberToMemberMapping( mappingSource, mappingTarget );
 
                 var targetProp = (PropertyInfo)memberMapping.TargetMember.MemberAccessPath.Last();
 
-                var optionAttribute = targetMemberInfo.GetCustomAttribute<OptionAttribute>();
+                var optionAttribute = targetMemberInfo.MemberInfo.GetCustomAttribute<OptionAttribute>();
                 string memberNameLowerCase = String.IsNullOrWhiteSpace( optionAttribute?.Name ) ?
                     targetProp.Name.ToLower() : optionAttribute.Name.ToLower();
 
@@ -593,7 +593,7 @@ namespace UltraMapper.Parsing.Extensions
                             Expression.AndAlso
                             (
                                 Expression.Equal( paramNameExp, Expression.Constant( String.Empty ) ),
-                                Expression.Equal( Expression.Constant( i ),
+                                Expression.Equal( Expression.Constant( targetMemberInfo.Index ),
                                     Expression.Property( subParam, nameof( IParsedParam.Index ) ) )
                             )
                         ),
@@ -620,17 +620,29 @@ namespace UltraMapper.Parsing.Extensions
         private static IMappingSource GetMappingSource( Type targetMemberType )
         {
             //if(targetMemberType == typeof( bool )) return _blSource;
-            if(targetMemberType.IsBuiltIn( true )) return _spSource;
+            if(targetMemberType.IsBuiltIn( true ) || targetMemberType == typeof(DateTime) ) return _spSource;
             if(targetMemberType.IsEnumerable()) return _apSource;
             return _cpSource;
         }
 
-        protected MemberInfo[] SelectTargetMembers( Type targetType )
+        public class MemberInfoEx
+        {
+            public readonly int Index;
+            public readonly MemberInfo MemberInfo;
+
+            public MemberInfoEx( int index, MemberInfo memberInfo )
+            {
+                Index = index;
+                MemberInfo = memberInfo;
+            }
+        }
+
+        protected MemberInfoEx[] SelectTargetMembers( Type targetType )
         {
             return targetType.GetProperties()
                 .Where( m => m.GetSetMethod() != null ) //must be assignable
                 .Where( m => m.GetIndexParameters().Length == 0 )//indexer not supported
-                .Select( ( m, index ) => new
+                .Select( m => new
                 {
                     Member = m,
                     Options = m.GetCustomAttribute<OptionAttribute>() ??
@@ -639,7 +651,8 @@ namespace UltraMapper.Parsing.Extensions
                 .Where( m => !m.Options.IsIgnored )
                 .OrderByDescending( info => info.Options.IsRequired )
                 .ThenBy( info => info.Options.Order )
-                .Select( m => m.Member )
+                //after resorting based on options.Order, i can set the right index to look for in case of map-by-index
+                .Select( ( m, index ) => new MemberInfoEx( index, m.Member ) )
                 .ToArray();
         }
 

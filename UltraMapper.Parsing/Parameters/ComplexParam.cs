@@ -55,4 +55,19 @@ namespace UltraMapper.Parsing
             throw new NotImplementedException();
         }
     }
+
+    //public sealed class ComplexParam : IParsedParam
+    //{
+    //    public string Name { get; set; } = String.Empty;
+    //    public int Index { get; set; } = 0;
+
+    //    public IList<IParsedParam> SubParams { get; set; } = new List<IParsedParam>();
+
+    //    public IParsedParam this[ int index ]
+    //        => this.SubParams[ index ];
+
+    //    public List<ArrayParam> Array => SubParams.OfType<ArrayParam>().ToList();
+    //    public List<ComplexParam> Complex => SubParams.OfType<ComplexParam>().ToList();
+    //    public List<SimpleParam> Simple => SubParams.OfType<SimpleParam>().ToList();
+    //}
 }

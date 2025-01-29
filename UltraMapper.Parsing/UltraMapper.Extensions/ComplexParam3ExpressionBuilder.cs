@@ -70,7 +70,7 @@ namespace UltraMapper.Parsing.Extensions
             {
                 return Expression.Block
                 (
-                    new[] { subParam },                    
+                    new[] { subParam },
                     Expression.Block( propertiesAssigns.ToArray() ),
                     context.TargetInstance
                 );
@@ -121,9 +121,9 @@ namespace UltraMapper.Parsing.Extensions
                 (
                     Expression.Assign( subParam, Expression.Call( context.SourceInstance, mi, Expression.Constant( memberName ) ) ),
                     Expression.IfThen
-                    ( 
-                        Expression.IsFalse( Expression.Equal( subParam, Expression.Constant(null, subParam.Type) ) ), 
-                        memberExp 
+                    (
+                        Expression.IsFalse( Expression.Equal( subParam, Expression.Constant( null, subParam.Type ) ) ),
+                        memberExp
                     )
                 );
             }
